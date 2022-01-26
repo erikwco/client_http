@@ -26,7 +26,7 @@ type HeaderParameters struct {
 
 func NewHttpClient(skipTLS bool) *Client {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.MaxIdleConnsPerHost = 1000
+	transport.MaxIdleConnsPerHost = 100
 	transport.MaxConnsPerHost = 1000
 	transport.MaxIdleConns = 1000
 
@@ -34,7 +34,7 @@ func NewHttpClient(skipTLS bool) *Client {
 		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 
-	httpClient := &http.Client{Transport: transport, Timeout: 120 * time.Second}
+	httpClient := &http.Client{Transport: transport, Timeout: 600 * time.Second}
 	return &Client{Instance: httpClient}
 
 }
@@ -102,15 +102,14 @@ func (c *Client) GetResponseWithPayloadAndAuth(url, username, password string, p
 	}
 
 	// defer body closing
-	defer response.Body.Close()
-	//defer Defer(func() {
-	//	if response.Body != nil {
-	//		err := response.Body.Close()
-	//		if err != nil {
-	//			fmt.Printf("error closing response.body [%v]", err)
-	//		}
-	//	}
-	//})
+	defer Defer(func() {
+		if response.Body != nil {
+			err := response.Body.Close()
+			if err != nil {
+				fmt.Printf("error closing response.body [%v]", err)
+			}
+		}
+	})
 
 	// reading body result
 	body, err := ioutil.ReadAll(response.Body)
