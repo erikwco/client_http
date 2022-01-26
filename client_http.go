@@ -47,16 +47,6 @@ func (c *Client) GetResponseWithCredentials(url, username, password string) (*Re
 		return nil, fmt.Errorf("can't get request error [%v]", err)
 	}
 
-	// defer closing body
-	defer Defer(func() {
-		if request.Body != nil {
-			err := request.Body.Close()
-			if err != nil {
-				fmt.Printf("can't close body error [%v]", err)
-			}
-		}
-	})
-
 	// set Credentials
 	request.SetBasicAuth(username, password)
 
@@ -92,6 +82,46 @@ func (c *Client) GetResponseWithCredentials(url, username, password string) (*Re
 
 }
 
+
+
+// GetResponseWithPayloadAndAuth - Get response sending payload, authentication header
+func (c *Client) GetResponseWithPayloadAndAuth(url, username, password string, payload []byte) (*Response, error){
+	// Get request for url and payload
+	request, err := http.NewRequest("GET", url, bytes.NewReader(payload))
+	if err != nil {
+		return nil, fmt.Errorf("error on build request [%s] - [%v]", url, err)
+	}
+
+	// set Authentication headers
+	request.SetBasicAuth(username, password)
+
+	// Do request
+	response,err := c.Instance.Do(request)
+	if err != nil {
+		return nil, fmt.Errorf("error on make request [%v] ", err)
+	}
+
+	// defer body closing
+	defer Defer(func() {
+		if response.Body != nil {
+			err := response.Body.Close()
+			if err != nil {
+				fmt.Printf("error closing response.body [%v]", err)
+			}
+		}
+	})
+
+	// reading body result
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body")
+	}
+
+	// returning response
+	return &Response{Body: body, Status: response.Status, StatusCode: response.StatusCode}, nil
+
+
+}
 
 // GetResponseWithPayloadAuthAndHeader - Get response sending payload, authentication header and headers
 func (c *Client) GetResponseWithPayloadAuthAndHeader(url, username, password string, payload []byte, headers []HeaderParameters) (*Response, error){
